@@ -1,0 +1,58 @@
+Biblioteca Bootstrap é uma biblioteca responsável por dar uma aparência melhor na aplicação.
+
+*** Tratamento de erros ***
+
+No momento temos duas situações incômodas na aplicação. Primeiro, se acessarmos a URL  http://localhost:3000/livros/forms, que não é uma rota
+cadastrada, receberemos uma mensagem do próprio Express informando que não é possível efetuar o método GET para essa URL. Porém, não é o tipo
+de mensagem que queremos mostrar ao usuário final, pois não é uma informação relevante para ele.
+Estamos lidando com uma página que não existe dentro da aplicação, o famoso erro 404 Not Found. Nesse caso, seria mais interessante apresentarmos ao usuário
+uma página especial explicando que a informação que está sendo buscada não foi encontrada.
+Além disso, temos uma segunda situação imprópria. Se tentarmos acessar a URL http://localhost:3000/livros/form/s, ela será roteada pela aplicação,
+já que o método GET funciona para a rota /livros/form/:id. Porém, esse :id é uma variável de ID e espera receber a identificação do livro que queremos editar,
+uma informação que precisa ser numérica. Ao invés disso, estamos passando uma letra (string), fazendo com que nossa aplicação devolva uma página estranha e com 
+que um erro seja exibido no terminal. Também queremos, nesse cenário, mostrar uma página ao usuário informando que existiu algum erro.
+Como proceder nessa situação?
+Na realidade, queremos filtrar todas as requisições que a aplicação recebe e, caso não encontremos uma rota específica para uma requisição, mostrar a página 404 Not Found
+para o cliente. Além disso, se houver um problema no processamento da requisição queremos mostar uma página de erro.
+Para filtrarmos as requisições, lançaremos mão dos famosos middlewares. Em nosso projeto, abriremos o arquivo custom-express.js e, antes do module.exports,
+criaremos um novo middlewares.
+Para isso, a partir do objeto app do Express, chamaremos o método use(), que, como já sabemos, recebe uma função com três parâmetros: req, a requisição;
+res, a resposta; e next, indicando o próximo middleware para onde a aplicação deverá ir.
+No corpo da função, tudo que precisaremos fazer é devolver a resposta contendo a página de 404. Sendo assim, faremos um return e usuaremos o método
+res.status() para setarmos o status da resposta como 404. Por fim, chamaremos o método marko() para carregarmos a página de erro.
+
+  app.use(function (req, resp, next) {
+      return resp.status(404).marko();
+  })
+
+A pasta de erro estará no caminho src/app/views/base/erros. E nela constará dois arquivos com a extensão .marko, ou seja, templates do MarkoJs. Um deles,
+404.marko, é a página para o erro "Not Found"; e o 500.marko, a página a ser exibida quando a aplicação tiver qualquer tipo de problema de processamento.
+Feito isso, voltaremos ao código do projeto, e na chamada de .marko(), faremos um require() para a página 404.
+
+  app.use(function (req, resp, next) {
+      return resp.status(404).marko(
+          require('../app/views/base/erros/404.marko')
+      );
+
+  });
+
+Agora podemos passar para o tratamento do erro 500, que é quando acontece alguma falha no processamento da requisição dentro da aplicação.
+Para resolver essa situação, os passos serão bem parecidos com o que fizemos com o erro 404. Sendo assim, copiaremos e colaremos esse middleware logo abaixo.
+A diferença nesse ponto é, como aconteceu um erro na aplicação, o middleware deverá receber, ao invés de três parâmetros, quatro, incluindo, alé, dos citados anteriormente, 
+o erro que aconteceu na aplicação(para o caso de efetuarmos algum tipo de tratamento especial com ele).
+É importante frisarmos que mesmo que não utilizemos esse parâmetro erro dentro do middleware, os quatros parâmetros precisam ser declarados, pois é 
+dessa maneira que o Express diferenciará um middleware comum de um middleware para tratamento de erros na aplicação.
+Por fim, trocaremos o status da resposta para 500 e o nome do template carregado para 500.marko:
+
+  app.use(function (erro, req, resp, next) {
+      return resp.status(500).marko(
+          require('../app/views/base/erros/500.marko')
+      );
+
+  });
+
+Após salvarmos o código, o Nodemon atualizará o servidor. De volta ao navegador, se acessarmos a URL http://localhost:3000/livros/form/s, a página de erro que criamos será mostrada.
+Se acessarmos a aba "Network" do console do desenvolvedor e tentarmos fazer uma requisição novamente, veremos que foi feita uam requisição para /s e que o status devolvido foi 500, 
+exatamente o que pedimos para o Express retornar.
+Já se acessarmos http://localhost:3000/livros/teste, uma rota que não existe na nossa aplicação, teremos, como esperado, a página de "Not Found"
+Na aba "Network", veremos que a requisição para /teste retornou um status 404, o mesmo que definimos no Express. 
