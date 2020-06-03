@@ -88,14 +88,17 @@ class LivroControlador {
     }
   }
 
-  remove() {
+  async remove() {
     return function (req, resp) {
       const id = req.params.id
 
       const livroDao = new LivroDao(db)
-      livroDao.remove(id)
-        .then(() => resp.status(200).end())
-        .catch(erro => console.log(erro))
+      await livroDao.remove(id)
+      try {
+        return resp.status(200).end()
+      } catch {
+        erro => console.log(erro)
+      }
     }
   }
 }
